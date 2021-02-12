@@ -1,48 +1,76 @@
+// dis.www.APIs['/conn'] =
+// (qs, body, opts) => efficiency.if(opts.req.type === 'POST')(() => '400 Bad Request')(() => '')();
+
 const fs = require('fs');
 
-const DbUtils = require('./utils');
+/* const efficiency = {
+  if: (bool) => (truthy) => (falsy) => [falsy, truthy][bool],
+}; */
 
-class Db {
+const { DbUtils, Db } = require('informa-db.js');
+
+class DbSuite extends Db {
   constructor(path, settings = {}) {
-    settings.soc = settings.soc ?? settings.saveOnChange ?? true;
-    this.saveOnChange = settings.soc;
-    this.saveSpace = settings.saveSpace;
-    if (!settings.exportThis && !settings.soc) throw new Error('Cannot have saveOnChange disabled without exportThis enabled');
-
-    if (!path) throw new Error('No path provided');
-    if (typeof path !== 'string') throw new Error('Provided path is not a string');
-    this.path = path;
-
-    if (!fs.existsSync(path)) fs.writeFileSync(path, JSON.stringify(settings.defaultValue) ?? '{}', (e) => { if (e) throw e; });
-
-    if (fs.readFileSync(path, 'utf8') === '') fs.writeFileSync(path, JSON.stringify(settings.defaultValue) ?? '{}', (e) => { if (e) throw e; });
-
-    this.readOnlyValue = JSON.parse(fs.readFileSync(path, 'utf8'));
-    if (!settings.exportThis || settings.exportThis == null) return this.value;
-  }
-
-  genProxy(data) {
-    return new Proxy(data, {
-      set: (obj, prop, val) => {
-        obj[prop] = val;
-        if (this.saveOnChange) {
-          this.update();
+    super(path, settings);
+    return (async (dis) => {
+      if (!settings.features) settings.features = {};
+      if (settings.features.multiInstancing) {
+        dis.runId = Date.now();
+        dis.fetch = require('node-fetch');
+        try {
+          dis.connDetails = await dis.fetch('http://localhost:13961/conn', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ runId: dis.runId, file: path }),
+          });
+        } catch (err) {
+          if (err.message.includes('ECONNREFUSED')) {
+            dis.www = require('webwebweb');
+            dis.states = {};
+            dis.www.APIs['/conn'] = (qs, body, opts) => ({
+              POST: () => ([
+                () => '400 Bad Request',
+                () => ([
+                  () => '400 Bad Request',
+                  () => ([
+                    () => '400 Bad Request',
+                    () => '200 Ok',
+                  ][+!!body.file])(),
+                ][+!!body.runId])(),
+              ][+!!body])(),
+            }[opts.req.method] || (() => null))();
+            dis.www.APIs['/lock'] = (qs, body, opts) => ({
+              POST: () => ([
+                () => '400 Bad Request',
+                () => ([
+                  () => '400 Bad Request',
+                  () => ([
+                    () => '400 Bad Request',
+                    () => {
+                      
+                    },
+                  ][+!!body.file])(),
+                ][+!!body.runId])(),
+              ][+!!body])(),
+            }[opts.req.method] || (() => null))();
+            dis.www.APIs['/isLocked'] = (qs, body, opts) => ({
+              POST: () => ([
+                () => '400 Bad Request',
+                () => ([
+                  () => '400 Bad Request',
+                  () => {
+                    return 
+                  },
+                ][+!!body.file])(),
+              ][+!!body])(),
+            }[opts.req.method] || (() => null))();
+          }
         }
-        return true;
-      },
-      deleteProperty: (obj, prop) => {
-        delete obj[prop];
-        if (this.saveOnChange) {
-          this.update();
-        }
-        return true;
-      },
-      get: (obj, prop) => (
-        typeof obj[prop] === 'object' && obj[prop]
-          ? this.genProxy(obj[prop])
-          : obj[prop]
-      ),
-    });
+      }
+      return dis;
+    })(this);
   }
 
   /**
@@ -75,4 +103,4 @@ class Db {
   }
 }
 
-module.exports = { Db, DbUtils };
+module.exports = { DbSuite, DbUtils };
